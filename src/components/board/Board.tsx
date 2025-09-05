@@ -84,7 +84,7 @@ export default function Board({
 
           <div className="min-w-[250px] flex items-center justify-center flex-none">
             <button
-              className="bg-blue-600 hover:bg-blue-800 text-white px-3 py-2 rounded-md"
+              className="bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-gray-300 rounded-lg p-3 w-full min-h-[200px] flex items-center justify-center text-gray-500"
               onClick={() => {
                 const name = prompt("Nom de la nouvelle liste ?");
                 if (!name) return;
