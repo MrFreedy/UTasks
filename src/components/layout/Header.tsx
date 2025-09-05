@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
 import type { User, BoardLite } from "./types";
 import "@/styles/header.css";
+import Avatar from "@/assets/avatar.svg";
 
 type HeaderProps = {
   user: User;
@@ -60,7 +61,7 @@ export default function Header({
           <div className="user">
             <img
               className="avatar"
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`}
+              src={Avatar}
               alt={`${user.name}`}
               referrerPolicy="no-referrer"
             />
