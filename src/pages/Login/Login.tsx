@@ -17,8 +17,10 @@ function Login() {
     setLoading(true);
 
     try {
-        const data = await api.login(id.trim());
-        if (data.success) {
+        const res = await api.login(id.trim());
+        if (res.success) {
+            localStorage.setItem('username', res.data.username);
+            localStorage.setItem('userId', id.trim());
             navigate('/');
         } else {
             setErrMsg('ID utilisateur invalide. Veuillez réessayer.');
