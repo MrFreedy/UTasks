@@ -1,4 +1,5 @@
 import type { NextPage } from "next";
+import { use, useEffect } from "react";
 import Board from "@/components/board/Board";
 import type { Board as BoardType, List, Card } from "@/components/board/types";
 import Header from "@/components/layout/Header";
@@ -41,7 +42,10 @@ const mockCards: Card[] = [
   },
 ];
 
-const App: NextPage = () => {
+const Dashboard: NextPage = () => {
+  useEffect(() => {
+    console.log("App mounted. Current board:", currentBoard.name);
+  }, []);
   return (
     <>
       <Header
@@ -65,4 +69,4 @@ const App: NextPage = () => {
   );
 };
 
-export default App;
+export default Dashboard;
