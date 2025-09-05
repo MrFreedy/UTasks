@@ -9,14 +9,16 @@ type ListColumnProps = {
 
 export default function ListColumn({ list, cards }: ListColumnProps) {
   return (
-    <div className="column">
-      <h2>{list.name}</h2>
+    <div className="bg-gray-50 border border-gray-300 rounded-lg p-3 min-h-[200px] min-w-[250px] flex-none">
+      <h2 className="m-0 mb-2 text-base font-semibold">{list.name}</h2>
       <Droppable droppableId={list.id}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`taskList ${snapshot.isDraggingOver ? "dragOver" : ""}`}
+            className={`min-h-[40px] p-1.5 rounded-md transition-colors duration-200 ${
+              snapshot.isDraggingOver ? "bg-blue-100" : ""
+            }`}
           >
             {cards.map((card, index) => (
               <CardItem key={card.id} card={card} index={index} />

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
 import type { User, BoardLite } from "./types";
-import "@/styles/header.css";
 import Avatar from "@/assets/avatar.svg";
 
 type HeaderProps = {
@@ -36,37 +35,48 @@ export default function Header({
 
   return (
     <>
-      <header className={`appHeader ${className ?? ""}`}>
-        <div className="headerLeft">
+      <header
+        className={[
+          "fixed inset-x-0 top-0 h-14 z-[110]",
+          "flex items-center justify-between",
+          "px-3 sm:px-4 border-b border-gray-200 bg-white shadow-sm",
+          className ?? "",
+        ].join(" ")}
+      >
+        {/* Left */}
+        <div className="flex items-center gap-2.5">
           <button
             ref={btnRef}
             type="button"
-            className="menuBtn"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             aria-label="Ouvrir le menu des boards"
             aria-expanded={open}
             aria-controls="left-sidebar"
             onClick={() => setOpen((v) => !v)}
           >
-            <span className="menuIcon" aria-hidden>
-              <span></span><span></span><span></span>
+            <span className="inline-flex flex-col gap-0.5" aria-hidden>
+              <span className="block w-[18px] h-[2px] bg-gray-900 rounded" />
+              <span className="block w-[18px] h-[2px] bg-gray-900 rounded" />
+              <span className="block w-[18px] h-[2px] bg-gray-900 rounded" />
             </span>
           </button>
 
-          <div className="brand">
-            {boards.find(b => b.id === currentBoardId)?.name ?? "Mes Boards"}
+          <div className="text-gray-900 font-bold text-base sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis">
+            {boards.find((b) => b.id === currentBoardId)?.name ?? "Mes Boards"}
           </div>
         </div>
 
-        <div className="headerRight">
+        {/* Right */}
+        <div className="flex items-center gap-3">
           <div className="user">
             <img
-              className="avatar"
+              className="w-9 h-9 rounded-full border border-gray-200 object-cover"
               src={Avatar}
               alt={`${user.name}`}
               referrerPolicy="no-referrer"
             />
           </div>
-          <button>
+          <button className="px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50">
             Disconnect
           </button>
         </div>

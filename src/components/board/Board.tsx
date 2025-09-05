@@ -3,7 +3,7 @@ import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import ListColumn from "./ListColumn";
 import { normalize } from "./normalize";
 import type { BoardProps, UIState } from "./types";
-import "@/styles/Board.css"
+
 export default function Board({
   board,
   lists,
@@ -34,7 +34,7 @@ export default function Board({
       if (destination.index === source.index) return;
       const newOrder = Array.from(state.listOrder);
       newOrder.splice(source.index, 1);
-      newOrder.splice(destination.index, 0, draggableId); // ici draggableId serait listId
+      newOrder.splice(destination.index, 0, draggableId);
 
       const next: UIState = { ...state, listOrder: newOrder };
       setState(next);
@@ -73,18 +73,18 @@ export default function Board({
   }
 
   return (
-    <div className="app">
+    <div className="w-full block px-4 mt-2 overflow-x-visible">
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="boardRow">
+        <div className="flex flex-row flex-nowrap gap-4 items-start w-full max-w-full overflow-x-auto pb-2 overscroll-contain [scrollbar-gutter:stable_both-edges]">
           {listsToRender.map((list) => {
             const cardIds = state.cardOrderByList[list.id] || [];
             const cards = cardIds.map((id) => state.cardsById[id]).filter(Boolean);
             return <ListColumn key={list.id} list={list} cards={cards} />;
           })}
 
-          <div className="addListCol">
+          <div className="min-w-[250px] flex items-center justify-center flex-none">
             <button
-              className="addListBtn"
+              className="bg-blue-600 hover:bg-blue-800 text-white px-3 py-2 rounded-md"
               onClick={() => {
                 const name = prompt("Nom de la nouvelle liste ?");
                 if (!name) return;
