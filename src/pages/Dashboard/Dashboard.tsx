@@ -1,24 +1,12 @@
 import type { NextPage } from "next";
-import { use, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Board from "@/components/board/Board";
 import type { Board as BoardType, List, Card } from "@/components/board/types";
 import Header from "@/components/layout/Header";
+import api from "@/services/apiService";
 
-const user = { id: "u1", name: "Arthur le boss", avatarUrl: "" };
-
-const boards = [
-  { id: "b1", name: "Projet X" },
-  { id: "b2", name: "Cours 3iL" },
-  { id: "b3", name: "Side project" },
-];
-
+const user = { id: localStorage.getItem("userId") || "", name: localStorage.getItem("username") || "", avatarUrl: "" };
 const currentBoardId = "b1";
-
-const allBoards: BoardType[] = [
-  { id: "b1", name: "Projet X", description: "Board de démo", userId: "u123" },
-  { id: "b2", name: "Cours 3iL", description: "Board de démo 2", userId: "u123" },
-];
-const currentBoard = allBoards.find(b => b.id === currentBoardId)!;
 
 const allLists: List[] = [
   { id: "l-todo",  name: "À faire",  boardId: "b1" },
@@ -42,28 +30,31 @@ const mockCards: Card[] = [
   },
 ];
 
+type BoardsResponse = { success: boolean; data: BoardType[] };
+
 const Dashboard: NextPage = () => {
+  const [boards, setBoards] = useState<BoardType[]>([]);
+
   useEffect(() => {
-    console.log("App mounted. Current board:", currentBoard.name);
+    const fetchBoards = async () => {
+      const userId = localStorage.getItem("userId") || "";
+      const res = await api.get<BoardsResponse>(`/boards/user/${userId}`);
+      const payload = Array.isArray(res?.data) ? res.data : [];
+      const sorted = [...payload].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
+      setBoards(sorted);
+    };
+    fetchBoards();
   }, []);
+
+  const currentBoard = boards.find((b) => b.id === currentBoardId);
+
   return (
     <>
-      <Header
-        user={user}
-        boards={boards}
-        currentBoardId={currentBoardId}
-        onSelectBoard={(id) => {
-          console.log("switch board ->", id);
-        }}
-      />
-
+      <Header user={user} boards={boards} currentBoardId={currentBoardId} onSelectBoard={() => {}} />
       <main className="pt-14">
-        <Board
-          board={currentBoard}
-          lists={lists}
-          cards={mockCards}
-          title={currentBoard.name}
-        />
+        {currentBoard && (
+          <Board board={currentBoard} lists={lists} cards={mockCards} title={currentBoard.name} />
+        )}
       </main>
     </>
   );
