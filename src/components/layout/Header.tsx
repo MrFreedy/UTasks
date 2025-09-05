@@ -70,6 +70,9 @@ export default function Header({
 
         {/* Right */}
         <div className="flex items-center gap-3">
+          <span className="text-gray-700 text-sm hidden sm:inline">
+            {localStorage.getItem('username') || user.name}
+          </span>
           <div className="user">
             <img
               className="w-9 h-9 rounded-full border border-gray-200 object-cover"
