@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
 import type { User, BoardLite } from "./types";
 import Avatar from "@/assets/avatar.svg";
+import { RiDoorLine, RiDoorOpenLine } from '@remixicon/react';
 
 type HeaderProps = {
   user: User;
@@ -20,6 +21,7 @@ export default function Header({
 }: HeaderProps) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -76,8 +78,18 @@ export default function Header({
               referrerPolicy="no-referrer"
             />
           </div>
-          <button className="px-3 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50">
-            Disconnect
+          <button 
+            className="w-9 h-9 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-100 text-gray-700 cursor-pointer"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={() => {
+              localStorage.removeItem('userId');
+              localStorage.removeItem('username');
+              window.location.reload();
+            }}
+            title="Se déconnecter"
+          >
+            {isHovered ? <RiDoorOpenLine className="text-xl" /> : <RiDoorLine className="text-xl" />}
           </button>
         </div>
       </header>
