@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import ListColumn from "./ListColumn";
 import { normalize } from "./normalize";
-import type { BoardProps, UIState, List } from "./types";
+import type { BoardProps, UIState, List, Card } from "./types";
 import type { ApiResponse } from "@/components/layout/types";
 import api from "@/services/apiService";
 
@@ -26,9 +26,16 @@ export default function Board({
       try {
         const res = await api.get<ApiResponse<List[]>>(`/lists/board/${board.id}`);
         const listsFromApi = res?.data ?? [];
-        if (!cancelled) {
-          setState(normalize(board, listsFromApi, cards));
-        }
+        // Fetch cards for each list
+        const cardResponses = await Promise.all(
+          listsFromApi.map((l) =>
+            api
+              .get<ApiResponse<Card[]>>(`/cards/list/${l.id}`)
+              .catch(() => undefined)
+          )
+        );
+        const cardsFromApi: Card[] = cardResponses.flatMap((r) => r?.data ?? []);
+        if (!cancelled) setState(normalize(board, listsFromApi, cardsFromApi));
       } catch (err) {
         console.error("Erreur lors du chargement des listes du board:", err);
       }
@@ -102,7 +109,47 @@ export default function Board({
           {listsToRender.map((list) => {
             const cardIds = state.cardOrderByList[list.id] || [];
             const cards = cardIds.map((id) => state.cardsById[id]).filter(Boolean);
-            return <ListColumn key={list.id} list={list} cards={cards} />;
+            return (
+              <ListColumn
+                key={list.id}
+                list={list}
+                cards={cards}
+                onDeleteList={(listId) => {
+                  setState((prev) => {
+                    const { [listId]: _removedList, ...restListsById } = prev.listsById;
+                    const newListOrder = prev.listOrder.filter((id) => id !== listId);
+                    const newCardsById: UIState["cardsById"] = {};
+                    for (const [cid, c] of Object.entries(prev.cardsById)) {
+                      if (c.listId !== listId) newCardsById[cid] = c;
+                    }
+                    const { [listId]: _removedOrder, ...restCardOrderByList } = prev.cardOrderByList;
+                    return {
+                      ...prev,
+                      listsById: restListsById,
+                      listOrder: newListOrder,
+                      cardsById: newCardsById,
+                      cardOrderByList: restCardOrderByList,
+                    };
+                  });
+                }}
+                onRenameList={(updated) => {
+                  setState((prev) => ({
+                    ...prev,
+                    listsById: { ...prev.listsById, [updated.id]: updated },
+                  }));
+                }}
+                onAddCard={(card) => {
+                  setState((prev) => ({
+                    ...prev,
+                    cardsById: { ...prev.cardsById, [card.id]: card },
+                    cardOrderByList: {
+                      ...prev.cardOrderByList,
+                      [list.id]: [...(prev.cardOrderByList[list.id] || []), card.id],
+                    },
+                  }));
+                }}
+              />
+            );
           })}
 
           <div className="min-w-[250px] flex items-center justify-center flex-none">

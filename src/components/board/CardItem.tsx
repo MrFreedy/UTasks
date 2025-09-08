@@ -1,6 +1,5 @@
 import { Draggable } from "@hello-pangea/dnd";
 import type { Card } from "./types";
-
 type CardItemProps = {
   card: Card;
   index: number;
