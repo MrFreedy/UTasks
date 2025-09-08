@@ -32,6 +32,7 @@ export default function Sidebar({
 
   const handleNewBoard = () => {
     const name = prompt("Nom du nouveau board ?");
+    if (!name) return;
     const description = prompt("Description du nouveau board ?");
     if (!name || !description) return;
 
@@ -82,9 +83,9 @@ export default function Sidebar({
         tabIndex={-1}
       >
         <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100">
-          <h3 className="m-0 text-base font-bold">Boards</h3>
+          <h3 className="m-0 text-base font-bold">Mes Boards</h3>
           <button
-            className="text-2xl leading-none bg-transparent border-0 cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="text-2xl leading-none bg-transparent border-0 cursor-pointer hover:opacity-80"
             onClick={onClose}
             aria-label="Fermer le menu"
           >
@@ -94,7 +95,7 @@ export default function Sidebar({
 
         <nav className="p-3 overflow-y-auto">
           {boards.length === 0 && (
-            <div className="text-gray-500 text-sm px-3 py-2">Aucun board</div>
+            <div className="text-gray-500 text-center text-sm px-3 py-2">Aucun board disponible</div>
           )}
 
           <ul className="grid gap-1.5 list-none m-0 p-0">
@@ -107,7 +108,6 @@ export default function Sidebar({
                       "w-full text-left px-3 py-2.5 rounded-lg border",
                       "bg-slate-50 border-gray-200 hover:bg-slate-100",
                       active ? "bg-indigo-100 border-indigo-300 border-3" : "",
-                      "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500",
                     ].join(" ")}
                     onClick={() => onSelectBoard?.(b.id)}
                   >
@@ -118,9 +118,9 @@ export default function Sidebar({
             })}
           </ul>
 
-          <button className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          <button className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg"
             onClick={handleNewBoard}>
-            Nouveau board
+            Créer un nouveau board
           </button>
         </nav>
       </aside>
