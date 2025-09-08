@@ -2,18 +2,41 @@ import { useEffect, useMemo, useState } from "react";
 import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
 import ListColumn from "./ListColumn";
 import { normalize } from "./normalize";
-import type { BoardProps, UIState } from "./types";
+import type { BoardProps, UIState, List } from "./types";
+import type { ApiResponse } from "@/components/layout/types";
+import api from "@/services/apiService";
 
 export default function Board({
   board,
   lists,
   cards,
-  title,
   onMoveCard,
   onReorderList,
   disableLocalPersistence
 }: BoardProps) {
   const [state, setState] = useState<UIState>(() => normalize(board, lists, cards));
+
+  useEffect(() => {
+    setState(normalize(board, lists, cards));
+  }, [board, lists, cards]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get<ApiResponse<List[]>>(`/lists/board/${board.id}`);
+        const listsFromApi = res?.data ?? [];
+        if (!cancelled) {
+          setState(normalize(board, listsFromApi, cards));
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des listes du board:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [board.id]);
 
   useEffect(() => {
     if (disableLocalPersistence) return;
@@ -85,19 +108,22 @@ export default function Board({
           <div className="min-w-[250px] flex items-center justify-center flex-none">
             <button
               className="bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-gray-300 rounded-lg p-3 w-full min-h-[200px] flex items-center justify-center text-gray-500 cursor-pointer"
-              onClick={() => {
+              onClick={async () => {
                 const name = prompt("Nom de la nouvelle liste ?");
                 if (!name) return;
-
-                const newListId = `list-${Date.now()}`;
-                const newList = { id: newListId, name, boardId: state.boardId };
-
-                setState((prev) => ({
-                  ...prev,
-                  listsById: { ...prev.listsById, [newListId]: newList },
-                  listOrder: [...prev.listOrder, newListId],
-                  cardOrderByList: { ...prev.cardOrderByList, [newListId]: [] },
-                }));
+                try {
+                  const res = await api.post<ApiResponse<List>>("/lists", { name, boardId: state.boardId });
+                  const newList = res.data;
+                  setState((prev) => ({
+                    ...prev,
+                    listsById: { ...prev.listsById, [newList.id]: newList },
+                    listOrder: [...prev.listOrder, newList.id],
+                    cardOrderByList: { ...prev.cardOrderByList, [newList.id]: [] },
+                  }));
+                } catch (error) {
+                  console.error("Erreur lors de la création de la liste :", error);
+                  alert("Impossible de créer la liste. Réessayez.");
+                }
               }}
             >
               + Ajouter une liste
