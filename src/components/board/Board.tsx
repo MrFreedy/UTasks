@@ -26,7 +26,6 @@ export default function Board({
       try {
         const res = await api.get<ApiResponse<List[]>>(`/lists/board/${board.id}`);
         const listsFromApi = res?.data ?? [];
-        // Fetch cards for each list
         const cardResponses = await Promise.all(
           listsFromApi.map((l) =>
             api
@@ -77,16 +76,30 @@ export default function Board({
 
     if (sourceListId === destListId && destination.index === source.index) return;
 
+    if (sourceListId === destListId) {
+      const newOrder = Array.from(state.cardOrderByList[sourceListId] || []);
+      newOrder.splice(source.index, 1);
+      newOrder.splice(destination.index, 0, draggableId);
+
+      const next: UIState = {
+        ...state,
+        cardOrderByList: {
+          ...state.cardOrderByList,
+          [sourceListId]: newOrder,
+        },
+      };
+      setState(next);
+      const movedCard = state.cardsById[draggableId];
+      onMoveCard?.(movedCard, destListId, destination.index, next);
+      return;
+    }
+
     const sourceOrder = Array.from(state.cardOrderByList[sourceListId] || []);
     sourceOrder.splice(source.index, 1);
-
     const destOrder = Array.from(state.cardOrderByList[destListId] || []);
     destOrder.splice(destination.index, 0, draggableId);
 
-    const movedCard = { ...state.cardsById[draggableId] };
-    if (movedCard.listId !== destListId) {
-      movedCard.listId = destListId;
-    }
+    const movedCard = { ...state.cardsById[draggableId], listId: destListId };
 
     const next: UIState = {
       ...state,
