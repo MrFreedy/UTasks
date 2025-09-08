@@ -1,5 +1,5 @@
 import { Droppable } from "@hello-pangea/dnd";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CardItem from "./CardItem";
 import type { List, Card } from "./types";
 import { RiInformationLine, RiMoreFill } from "@remixicon/react";
@@ -17,6 +17,7 @@ type ListColumnProps = {
 export default function ListColumn({ list, cards, onDeleteList, onRenameList, onAddCard }: ListColumnProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [sortMode, setSortMode] = useState<"none" | "dueDate" | "priority">("none");
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -35,6 +36,26 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
       window.removeEventListener("mousedown", onClick);
     };
   }, [menuOpen]);
+
+  const cardsToRender = useMemo(() => {
+    if (sortMode === "none") return cards;
+    const withIndex = cards.map((c, i) => ({ c, i }));
+    if (sortMode === "dueDate") {
+      withIndex.sort((a, b) => {
+        const da = new Date(a.c.dueDate).getTime();
+        const db = new Date(b.c.dueDate).getTime();
+        if (da === db) return a.i - b.i; // stable tie-breaker
+        return da - db; // earliest first
+      });
+    } else if (sortMode === "priority") {
+      withIndex.sort((a, b) => {
+        // Highest priority first (3 > 2 > 1)
+        if (a.c.priority === b.c.priority) return a.i - b.i;
+        return b.c.priority - a.c.priority;
+      });
+    }
+    return withIndex.map((x) => x.c);
+  }, [cards, sortMode]);
 
   return (
     <div className="bg-gray-50 border border-gray-300 rounded-lg p-3 min-h-[200px] min-w-[250px] flex-none relative">
@@ -68,6 +89,40 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
             ].join(" ")}
             role="menu"
           >
+            <div className="px-3 py-2 text-xs text-gray-500 border-b">Trier</div>
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+              onClick={() => {
+                setSortMode("dueDate");
+                setMenuOpen(false);
+              }}
+              role="menuitem"
+            >
+              Par échéance {sortMode === "dueDate" ? "✓" : ""}
+            </button>
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+              onClick={() => {
+                setSortMode("priority");
+                setMenuOpen(false);
+              }}
+              role="menuitem"
+            >
+              Par priorité {sortMode === "priority" ? "✓" : ""}
+            </button>
+            {sortMode !== "none" && (
+              <button
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                onClick={() => {
+                  setSortMode("none");
+                  setMenuOpen(false);
+                }}
+                role="menuitem"
+              >
+                Réinitialiser le tri
+              </button>
+            )}
+            <div className="h-px bg-gray-200 my-1" />
             <button
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
               onClick={async () => {
@@ -188,7 +243,7 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
               snapshot.isDraggingOver ? "bg-blue-100" : ""
             }`}
           >
-            {cards.map((card, index) => (
+            {cardsToRender.map((card, index) => (
               <CardItem key={card.id} card={card} index={index} />
             ))}
             {provided.placeholder}
