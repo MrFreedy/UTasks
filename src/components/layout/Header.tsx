@@ -9,6 +9,7 @@ type HeaderProps = {
   boards: BoardLite[];
   currentBoardId?: string;
   onSelectBoard?: (boardId: string) => void;
+  onBoardCreated?: (board: BoardLite) => void;
   className?: string;
 };
 
