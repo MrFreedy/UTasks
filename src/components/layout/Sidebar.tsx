@@ -106,7 +106,7 @@ export default function Sidebar({
                     className={[
                       "w-full text-left px-3 py-2.5 rounded-lg border",
                       "bg-slate-50 border-gray-200 hover:bg-slate-100",
-                      active ? "bg-indigo-100 border-indigo-300" : "",
+                      active ? "bg-indigo-100 border-indigo-300 border-3" : "",
                       "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500",
                     ].join(" ")}
                     onClick={() => onSelectBoard?.(b.id)}
