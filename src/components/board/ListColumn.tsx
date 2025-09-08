@@ -44,12 +44,11 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
       withIndex.sort((a, b) => {
         const da = new Date(a.c.dueDate).getTime();
         const db = new Date(b.c.dueDate).getTime();
-        if (da === db) return a.i - b.i; // stable tie-breaker
-        return da - db; // earliest first
+        if (da === db) return a.i - b.i;
+        return da - db;
       });
     } else if (sortMode === "priority") {
       withIndex.sort((a, b) => {
-        // Highest priority first (3 > 2 > 1)
         if (a.c.priority === b.c.priority) return a.i - b.i;
         return b.c.priority - a.c.priority;
       });
