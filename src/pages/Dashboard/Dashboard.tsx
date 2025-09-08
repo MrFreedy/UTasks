@@ -1,63 +1,90 @@
-import type { NextPage } from "next";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Board from "@/components/board/Board";
-import type { Board as BoardType, List, Card } from "@/components/board/types";
+import type { Board as BoardType } from "@/components/board/types";
 import Header from "@/components/layout/Header";
 import api from "@/services/apiService";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-const user = { id: localStorage.getItem("userId") || "", name: localStorage.getItem("username") || "", avatarUrl: "" };
-const currentBoardId = "b1";
-
-const allLists: List[] = [
-  { id: "l-todo",  name: "À faire",  boardId: "b1" },
-  { id: "l-doing", name: "En cours", boardId: "b1" },
-  { id: "l-done",  name: "Terminé",  boardId: "b1" },
-];
-const lists = allLists.filter(l => l.boardId === currentBoardId);
-
-const mockCards: Card[] = [
-  {
-    id: "c1", title: "Préparer la démo", description: "slides + scénar",
-    listId: "l-todo", dueDate: new Date().toISOString(), priority: 2, isCompleted: false
-  },
-  {
-    id: "c2", title: "Écrire la doc", description: "README + API",
-    listId: "l-todo", dueDate: new Date(Date.now()+86400000).toISOString(), priority: 1, isCompleted: false
-  },
-  {
-    id: "c3", title: "Fix bug #123", description: "page profile crash",
-    listId: "l-doing", dueDate: new Date().toISOString(), priority: 3, isCompleted: false
-  },
-];
+const user = {
+  id: localStorage.getItem("userId") || "",
+  name: localStorage.getItem("username") || "",
+  avatarUrl: ""
+};
 
 type BoardsResponse = { success: boolean; data: BoardType[] };
 
-const Dashboard: NextPage = () => {
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [boards, setBoards] = useState<BoardType[]>([]);
+  const [currentBoardId, setCurrentBoardId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchBoards = async () => {
       const userId = localStorage.getItem("userId") || "";
-      const res = await api.get<BoardsResponse>(`/boards/user/${userId}`);
-      const payload = Array.isArray(res?.data) ? res.data : [];
-      const sorted = [...payload].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
-      setBoards(sorted);
+      try {
+        const res = await api.get<BoardsResponse>(`/boards/user/${userId}`);
+        const payload = res?.data ?? [];
+        const sorted = [...payload].sort((a, b) =>
+          a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
+        );
+        setBoards(sorted);
+
+        const fromUrl = searchParams.get("b") || undefined;
+        const fromStorage = localStorage.getItem("currentBoardId") || undefined;
+        const initial = fromUrl ?? fromStorage ?? sorted[0]?.id;
+        if (initial) setCurrentBoardId(initial);
+      } catch (err) {
+        console.error("Erreur chargement boards:", err);
+        setBoards([]);
+      }
     };
     fetchBoards();
   }, []);
 
-  const currentBoard = boards.find((b) => b.id === currentBoardId);
+  const currentBoard = useMemo(
+    () => boards.find((b) => b.id === currentBoardId),
+    [boards, currentBoardId]
+  );
 
   return (
     <>
-      <Header user={user} boards={boards} currentBoardId={currentBoardId} onSelectBoard={() => {}} />
+      <Header
+        user={user}
+        boards={boards}
+        currentBoardId={currentBoardId}
+        onSelectBoard={(id) => {
+          setCurrentBoardId(id);
+          localStorage.setItem("currentBoardId", id);
+          const sp = new URLSearchParams(searchParams);
+          sp.set("b", id);
+          navigate({ pathname: "/", search: sp.toString() });
+        }}
+        onBoardCreated={(newBoard) => {
+          const next = [...boards, newBoard].sort((a, b) =>
+            a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
+          );
+          setBoards(next);
+          setCurrentBoardId(newBoard.id);
+          localStorage.setItem("currentBoardId", newBoard.id);
+          const sp = new URLSearchParams(searchParams);
+          sp.set("b", newBoard.id);
+          navigate({ pathname: "/", search: sp.toString() });
+        }}
+      />
       <main className="pt-14">
         {currentBoard && (
-          <Board board={currentBoard} lists={lists} cards={mockCards} title={currentBoard.name} />
+          <Board
+            board={currentBoard}
+            lists={[]}
+            cards={[]}
+            title={currentBoard.name}
+          />
         )}
       </main>
+      <span className="block text-center text-sm text-gray-500">
+        ID du board : {currentBoard?.id || "Aucun board sélectionné"}
+      </span>
     </>
   );
-};
-
-export default Dashboard;
+}
