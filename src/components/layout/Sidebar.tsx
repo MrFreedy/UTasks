@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import type { BoardLite } from "./types";
+import type { BoardLite, ApiResponse } from "./types";
+import api from "@/services/apiService";
 
 type SidebarProps = {
   id?: string;
@@ -28,6 +29,31 @@ export default function Sidebar({
       el?.focus();
     }
   }, [open]);
+
+  const handleNewBoard = () => {
+    const name = prompt("Nom du nouveau board ?");
+    const description = prompt("Description du nouveau board ?");
+    if (!name || !description) return;
+
+    createNewBoard(name, description);
+  };
+
+  const createNewBoard = async (name: string, description: string) => {
+    try {
+      const userId = localStorage.getItem("userId") || "";
+      const res = await api.post<ApiResponse<BoardLite>>('/boards', { name, description, userId });
+
+      window.location.href = `?b=${res.data.id}`;
+
+    } catch (error) {
+      console.error("Error creating board:", error);
+      alert("Erreur lors de la création du board. Veuillez réessayer.");
+    }
+    finally {
+      onClose();
+    }
+      
+  }
 
   return (
     <>
@@ -91,6 +117,11 @@ export default function Sidebar({
               );
             })}
           </ul>
+
+          <button className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={handleNewBoard}>
+            Nouveau board
+          </button>
         </nav>
       </aside>
     </>
