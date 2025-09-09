@@ -1,4 +1,5 @@
 import { Droppable } from "@hello-pangea/dnd";
+import type { DraggableProvidedDragHandleProps, DraggableProvidedDraggableProps } from "@hello-pangea/dnd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import CardItem from "./CardItem";
 import type { List, Card } from "./types";
@@ -14,9 +15,12 @@ type ListColumnProps = {
   onAddCard?: (card: Card) => void;
   onUpdateCard?: (card: Card) => void;
   onDeleteCard?: (cardId: string) => void;
+  dragHandleProps?: DraggableProvidedDragHandleProps;
+  draggableProps?: DraggableProvidedDraggableProps;
+  innerRef?: (element: HTMLElement | null) => void;
 };
 
-export default function ListColumn({ list, cards, onDeleteList, onRenameList, onAddCard, onUpdateCard, onDeleteCard }: ListColumnProps) {
+export default function ListColumn({ list, cards, onDeleteList, onRenameList, onAddCard, onUpdateCard, onDeleteCard, dragHandleProps, draggableProps, innerRef }: ListColumnProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [sortMode, setSortMode] = useState<"none" | "dueDate" | "priority">("none");
@@ -59,8 +63,14 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
   }, [cards, sortMode]);
 
   return (
-    <div className="bg-gray-50 border border-gray-300 rounded-lg p-3 min-h-[200px] min-w-[250px] flex-none relative">
-      <div className="flex items-start justify-between gap-2 mb-2">
+    <div
+      className="bg-gray-50 border border-gray-300 rounded-lg p-3 min-h-[200px] min-w-[250px] flex-none relative"
+      ref={innerRef}
+      {...draggableProps}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2 cursor-grab"
+           {...dragHandleProps}
+      >
         <h2 className="m-0 text-base font-semibold">
           {list.name}
           <span className="ml-1 align-middle relative group">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DragDropContext, type DropResult } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import ListColumn from "./ListColumn";
 import { normalize } from "./normalize";
 import type { BoardProps, UIState, List, Card } from "./types";
@@ -118,98 +118,114 @@ export default function Board({
   return (
     <div className="w-full block px-4 mt-2 overflow-x-visible">
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex flex-row flex-nowrap gap-4 items-start w-full max-w-full overflow-x-auto pb-2 overscroll-contain [scrollbar-gutter:stable_both-edges]">
-          {listsToRender.map((list) => {
-            const cardIds = state.cardOrderByList[list.id] || [];
-            const cards = cardIds.map((id) => state.cardsById[id]).filter(Boolean);
-            return (
-              <ListColumn
-                key={list.id}
-                list={list}
-                cards={cards}
-                onDeleteList={(listId) => {
-                  setState((prev) => {
-                    const { [listId]: _removedList, ...restListsById } = prev.listsById;
-                    const newListOrder = prev.listOrder.filter((id) => id !== listId);
-                    const newCardsById: UIState["cardsById"] = {};
-                    for (const [cid, c] of Object.entries(prev.cardsById)) {
-                      if (c.listId !== listId) newCardsById[cid] = c;
-                    }
-                    const { [listId]: _removedOrder, ...restCardOrderByList } = prev.cardOrderByList;
-                    return {
-                      ...prev,
-                      listsById: restListsById,
-                      listOrder: newListOrder,
-                      cardsById: newCardsById,
-                      cardOrderByList: restCardOrderByList,
-                    };
-                  });
-                }}
-                onRenameList={(updated) => {
-                  setState((prev) => ({
-                    ...prev,
-                    listsById: { ...prev.listsById, [updated.id]: updated },
-                  }));
-                }}
-                onAddCard={(card) => {
-                  setState((prev) => ({
-                    ...prev,
-                    cardsById: { ...prev.cardsById, [card.id]: card },
-                    cardOrderByList: {
-                      ...prev.cardOrderByList,
-                      [list.id]: [...(prev.cardOrderByList[list.id] || []), card.id],
-                    },
-                  }));
-                }}
-                onUpdateCard={(updated) => {
-                  setState((prev) => ({
-                    ...prev,
-                    cardsById: { ...prev.cardsById, [updated.id]: updated },
-                  }));
-                }}
-                onDeleteCard={(cardId) => {
-                  setState((prev) => {
-                    const card = prev.cardsById[cardId];
-                    if (!card) return prev;
-                    const { [cardId]: _removed, ...restCardsById } = prev.cardsById;
-                    const order = prev.cardOrderByList[card.listId] || [];
-                    const newOrder = order.filter((id) => id !== cardId);
-                    return {
-                      ...prev,
-                      cardsById: restCardsById,
-                      cardOrderByList: { ...prev.cardOrderByList, [card.listId]: newOrder },
-                    };
-                  });
-                }}
-              />
-            );
-          })}
-
-          <div className="min-w-[250px] flex items-center justify-center flex-none">
-            <button
-              className="bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-gray-300 rounded-lg p-3 w-full min-h-[200px] flex items-center justify-center text-gray-500 cursor-pointer"
-              onClick={async () => {
-                const name = prompt("Nom de la nouvelle liste ?");
-                if (!name) return;
-                try {
-                  const res = await api.post<ApiResponse<List>>("/lists", { name, boardId: state.boardId });
-                  const newList = res.data;
-                  setState((prev) => ({
-                    ...prev,
-                    listsById: { ...prev.listsById, [newList.id]: newList },
-                    listOrder: [...prev.listOrder, newList.id],
-                    cardOrderByList: { ...prev.cardOrderByList, [newList.id]: [] },
-                  }));
-                } catch (error) {
-                  console.error("Erreur lors de la création de la liste :", error);
-                  alert("Impossible de créer la liste. Réessayez.");
-                }
-              }}
+        <Droppable droppableId="board-columns" type="COLUMN" direction="horizontal">
+          {(colProvided) => (
+            <div
+              ref={colProvided.innerRef}
+              {...colProvided.droppableProps}
+              className="flex flex-row flex-nowrap gap-4 items-start w-full max-w-full overflow-x-auto pb-2 overscroll-contain [scrollbar-gutter:stable_both-edges]"
             >
-              + Ajouter une liste
-            </button>
-          </div>
-        </div>
+              {listsToRender.map((list, index) => {
+                const cardIds = state.cardOrderByList[list.id] || [];
+                const cards = cardIds.map((id) => state.cardsById[id]).filter(Boolean);
+                return (
+                  <Draggable draggableId={list.id} index={index} key={list.id}>
+                    {(provided) => (
+                      <ListColumn
+                        list={list}
+                        cards={cards}
+                        innerRef={provided.innerRef as any}
+                        draggableProps={provided.draggableProps}
+                        dragHandleProps={provided.dragHandleProps}
+                        onDeleteList={(listId) => {
+                          setState((prev) => {
+                            const { [listId]: _removedList, ...restListsById } = prev.listsById;
+                            const newListOrder = prev.listOrder.filter((id) => id !== listId);
+                            const newCardsById: UIState["cardsById"] = {};
+                            for (const [cid, c] of Object.entries(prev.cardsById)) {
+                              if (c.listId !== listId) newCardsById[cid] = c;
+                            }
+                            const { [listId]: _removedOrder, ...restCardOrderByList } = prev.cardOrderByList;
+                            return {
+                              ...prev,
+                              listsById: restListsById,
+                              listOrder: newListOrder,
+                              cardsById: newCardsById,
+                              cardOrderByList: restCardOrderByList,
+                            };
+                          });
+                        }}
+                        onRenameList={(updated) => {
+                          setState((prev) => ({
+                            ...prev,
+                            listsById: { ...prev.listsById, [updated.id]: updated },
+                          }));
+                        }}
+                        onAddCard={(card) => {
+                          setState((prev) => ({
+                            ...prev,
+                            cardsById: { ...prev.cardsById, [card.id]: card },
+                            cardOrderByList: {
+                              ...prev.cardOrderByList,
+                              [list.id]: [...(prev.cardOrderByList[list.id] || []), card.id],
+                            },
+                          }));
+                        }}
+                        onUpdateCard={(updated) => {
+                          setState((prev) => ({
+                            ...prev,
+                            cardsById: { ...prev.cardsById, [updated.id]: updated },
+                          }));
+                        }}
+                        onDeleteCard={(cardId) => {
+                          setState((prev) => {
+                            const card = prev.cardsById[cardId];
+                            if (!card) return prev;
+                            const { [cardId]: _removed, ...restCardsById } = prev.cardsById;
+                            const order = prev.cardOrderByList[card.listId] || [];
+                            const newOrder = order.filter((id) => id !== cardId);
+                            return {
+                              ...prev,
+                              cardsById: restCardsById,
+                              cardOrderByList: { ...prev.cardOrderByList, [card.listId]: newOrder },
+                            };
+                          });
+                        }}
+                      />
+                    )}
+                  </Draggable>
+                );
+              })}
+
+              <div className="min-w-[250px] flex items-center justify-center flex-none">
+                <button
+                  className="bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-gray-300 rounded-lg p-3 w-full min-h-[200px] flex items-center justify-center text-gray-500 cursor-pointer"
+                  onClick={async () => {
+                    const name = prompt("Nom de la nouvelle liste ?");
+                    if (!name) return;
+                    try {
+                      const res = await api.post<ApiResponse<List>>("/lists", { name, boardId: state.boardId });
+                      const newList = res.data;
+                      setState((prev) => ({
+                        ...prev,
+                        listsById: { ...prev.listsById, [newList.id]: newList },
+                        listOrder: [...prev.listOrder, newList.id],
+                        cardOrderByList: { ...prev.cardOrderByList, [newList.id]: [] },
+                      }));
+                    } catch (error) {
+                      console.error("Erreur lors de la création de la liste :", error);
+                      alert("Impossible de créer la liste. Réessayez.");
+                    }
+                  }}
+                >
+                  + Ajouter une liste
+                </button>
+              </div>
+
+              {colProvided.placeholder}
+            </div>
+          )}
+        </Droppable>
       </DragDropContext>
     </div>
   );
