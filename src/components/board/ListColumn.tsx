@@ -1,6 +1,9 @@
 import { Droppable } from "@hello-pangea/dnd";
-import type { DraggableProvidedDragHandleProps, DraggableProvidedDraggableProps } from "@hello-pangea/dnd";
-import { useEffect, useMemo, useRef, useState } from "react";
+import type {
+  DraggableProvidedDragHandleProps,
+  DraggableProvidedDraggableProps,
+} from "@hello-pangea/dnd";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CardItem from "./CardItem";
 import type { List, Card } from "./types";
 import { RiInformationLine, RiMoreFill } from "@remixicon/react";
@@ -20,7 +23,85 @@ type ListColumnProps = {
   innerRef?: (element: HTMLElement | null) => void;
 };
 
-export default function ListColumn({ list, cards, onDeleteList, onRenameList, onAddCard, onUpdateCard, onDeleteCard, dragHandleProps, draggableProps, innerRef }: ListColumnProps) {
+type NewCardInput = {
+  title: string;
+  description: string;
+  priority: 1 | 2 | 3;
+  dueDate: string; // AAAA-MM-JJ
+};
+
+/** Demande à l'utilisateur les infos d'une nouvelle carte (via prompt) et valide les entrées. */
+function promptNewCardInput(listName: string): NewCardInput | null {
+  const title = prompt(`Nom de la nouvelle carte dans "${listName}" ?`);
+  if (!title) return null;
+
+  const description = prompt("Description de la nouvelle carte ?") ?? "";
+
+  const pr = prompt("Priorité (1=Basse, 2=Moyenne, 3=Haute)", "2");
+  if (!pr) return null;
+  const priorityNum = Number(pr);
+  if (![1, 2, 3].includes(priorityNum)) {
+    alert("Priorité invalide. Choisissez 1, 2 ou 3.");
+    return null;
+  }
+
+  const dueDateInput = prompt("Échéance (AAAA-MM-JJ)", "");
+  if (!dueDateInput) return null;
+  const m = dueDateInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) {
+    alert("Date invalide. Utilisez le format AAAA-MM-JJ.");
+    return null;
+  }
+
+  const [, y, mo, d] = m;
+  const yN = Number(y);
+  const moN = Number(mo);
+  const dN = Number(d);
+  const dObj = new Date(Date.UTC(yN, moN - 1, dN, 23, 59, 59, 0));
+  if (
+    dObj.getUTCFullYear() !== yN ||
+    dObj.getUTCMonth() !== moN - 1 ||
+    dObj.getUTCDate() !== dN
+  ) {
+    alert("Date invalide. Utilisez une date réelle au format AAAA-MM-JJ.");
+    return null;
+  }
+
+  return {
+    title,
+    description,
+    priority: priorityNum as 1 | 2 | 3,
+    dueDate: `${y}-${mo}-${d}`,
+  };
+}
+
+/** Comparateurs de tri de cartes */
+const cardComparators = {
+  none: (_a: Card, _b: Card, _ai: number, _bi: number) => 0,
+  dueDate: (a: Card, b: Card, ai: number, bi: number) => {
+    const da = new Date(a.dueDate).getTime();
+    const db = new Date(b.dueDate).getTime();
+    if (da === db) return ai - bi;
+    return da - db;
+  },
+  priority: (a: Card, b: Card, ai: number, bi: number) => {
+    if (a.priority === b.priority) return ai - bi;
+    return b.priority - a.priority;
+  },
+} as const;
+
+export default function ListColumn({
+  list,
+  cards,
+  onDeleteList,
+  onRenameList,
+  onAddCard,
+  onUpdateCard,
+  onDeleteCard,
+  dragHandleProps,
+  draggableProps,
+  innerRef,
+}: ListColumnProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [sortMode, setSortMode] = useState<"none" | "dueDate" | "priority">("none");
@@ -44,23 +125,76 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
   }, [menuOpen]);
 
   const cardsToRender = useMemo(() => {
-    if (sortMode === "none") return cards;
     const withIndex = cards.map((c, i) => ({ c, i }));
-    if (sortMode === "dueDate") {
-      withIndex.sort((a, b) => {
-        const da = new Date(a.c.dueDate).getTime();
-        const db = new Date(b.c.dueDate).getTime();
-        if (da === db) return a.i - b.i;
-        return da - db;
-      });
-    } else if (sortMode === "priority") {
-      withIndex.sort((a, b) => {
-        if (a.c.priority === b.c.priority) return a.i - b.i;
-        return b.c.priority - a.c.priority;
-      });
+    const cmp = cardComparators[sortMode];
+    if (cmp !== cardComparators.none) {
+      withIndex.sort((a, b) => cmp(a.c, b.c, a.i, b.i));
     }
     return withIndex.map((x) => x.c);
   }, [cards, sortMode]);
+
+  /** Action centralisée pour créer une carte (utilisée par le menu ET le bouton bas) */
+  const handleCreateCard = useCallback(async () => {
+    const input = promptNewCardInput(list.name);
+    if (!input) return;
+
+    try {
+      const res = await api.post<ApiResponse<Card> | Card>("/cards", {
+        title: input.title,
+        description: input.description,
+        listId: list.id,
+        dueDate: input.dueDate,
+        priority: input.priority,
+        isCompleted: false,
+      });
+      const newCard: Card = (res as any)?.data ?? (res as any);
+      if (typeof (newCard as any).isCompleted !== "boolean") {
+        (newCard as any).isCompleted = false;
+      }
+      onAddCard?.(newCard);
+    } catch (error: any) {
+      console.error("Erreur lors de la création de la carte", error?.response?.data || error);
+      alert("Impossible de créer la carte. Réessayez.");
+    } finally {
+      setMenuOpen(false);
+    }
+  }, [list.id, list.name, onAddCard]);
+
+  /** Action centralisée : renommer la liste */
+  const handleRenameList = useCallback(async () => {
+    const newName = prompt(`Renommer la liste "${list.name}"`, list.name)?.trim();
+    if (!newName || newName === list.name) return;
+    try {
+      const res = await api.put<ApiResponse<List>>(`/lists/${list.id}`, {
+        name: newName,
+        boardId: list.boardId,
+      });
+      onRenameList?.(res.data);
+    } catch (error) {
+      console.error("Erreur lors du renommage de la liste :", error);
+      alert("Impossible de renommer la liste. Réessayez.");
+    } finally {
+      setMenuOpen(false);
+    }
+  }, [list.id, list.name, list.boardId, onRenameList]);
+
+  /** Action centralisée : supprimer la liste */
+  const handleDeleteList = useCallback(async () => {
+    const confirmDelete = confirm(
+      `Confirmer la suppression de la liste "${list.name}" ?`
+    );
+    if (!confirmDelete) return;
+    try {
+      await api.delete(`/lists/${list.id}`);
+      onDeleteList?.(list.id);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la liste", error);
+      alert("Impossible de supprimer la liste. Réessayez.");
+      return;
+    } finally {
+      setMenuOpen(false);
+    }
+  }, [list.id, list.name, onDeleteList]);
 
   return (
     <div
@@ -68,9 +202,7 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
       ref={innerRef}
       {...draggableProps}
     >
-      <div className="flex items-start justify-between gap-2 mb-2 cursor-grab"
-           {...dragHandleProps}
-      >
+      <div className="flex items-start justify-between gap-2 mb-2 cursor-grab" {...dragHandleProps}>
         <h2 className="m-0 text-base font-semibold">
           {list.name}
           <span className="ml-1 align-middle relative group">
@@ -88,10 +220,11 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            title="Une bouton action"
+            title="Menu d’actions"
           >
             <RiMoreFill className="w-4 h-4 mr-1" />
           </button>
+
           <div
             className={[
               "absolute right-0 mt-1 w-44 z-[5]",
@@ -101,6 +234,7 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
             role="menu"
           >
             <div className="px-3 py-2 text-xs text-gray-500 border-b">Trier</div>
+
             <button
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
               onClick={() => {
@@ -111,6 +245,7 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
             >
               Par échéance {sortMode === "dueDate" ? "✓" : ""}
             </button>
+
             <button
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
               onClick={() => {
@@ -121,6 +256,7 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
             >
               Par priorité {sortMode === "priority" ? "✓" : ""}
             </button>
+
             {sortMode !== "none" && (
               <button
                 className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
@@ -133,111 +269,30 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
                 Réinitialiser le tri
               </button>
             )}
+
             <div className="h-px bg-gray-200 my-1" />
+
             <button
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-              onClick={async () => {
-                const title = prompt(`Nom de la nouvelle carte dans \"${list.name}\" ?`);
-                if (!title) return;
-
-                const description = prompt("Description de la nouvelle carte ?") ?? "";
-
-                const pr = prompt("Priorité (1=Basse, 2=Moyenne, 3=Haute)", "2");
-                if (!pr) return;
-                const priorityNum = Number(pr);
-                if (![1, 2, 3].includes(priorityNum)) {
-                  alert("Priorité invalide. Choisissez 1, 2 ou 3.");
-                  return;
-                }
-
-                const dueDateInput = prompt("Échéance (AAAA-MM-JJ)", "");
-                if (!dueDateInput) return;
-                const m = dueDateInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-                if (!m) {
-                  alert("Date invalide. Utilisez le format AAAA-MM-JJ.");
-                  return;
-                }
-                const [_, y, mo, d] = m;
-                const yN = Number(y);
-                const moN = Number(mo);
-                const dN = Number(d);
-                const dObj = new Date(Date.UTC(yN, moN - 1, dN, 23, 59, 59, 0));
-
-                if (
-                  dObj.getUTCFullYear() !== yN ||
-                  dObj.getUTCMonth() !== moN - 1 ||
-                  dObj.getUTCDate() !== dN
-                ) {
-                  alert("Date invalide. Utilisez une date réelle au format AAAA-MM-JJ.");
-                  return;
-                }
-
-                const dueDateForApi = `${y}-${mo}-${d}`;
-
-                try {
-                  const res = await api.post<ApiResponse<Card>|Card>("/cards", {
-                    title,
-                    description,
-                    listId: list.id,
-                    dueDate: dueDateForApi,
-                    priority: priorityNum,
-                    isCompleted: false,
-                  });
-                  const newCard: Card = (res as any)?.data ?? (res as any);
-                  if (typeof (newCard as any).isCompleted !== "boolean") {
-                    (newCard as any).isCompleted = false;
-                  }
-                  onAddCard?.(newCard);
-                } catch (error: any) {
-                  const serverMsg = error?.response?.data?.message || error?.message || "";
-                  console.error("Erreur lors de la création de la carte", error?.response?.data || error);
-                  alert("Impossible de créer la carte. Réessayez.");
-                } finally {
-                  setMenuOpen(false);
-                }
-              }}
+              onClick={handleCreateCard}
               role="menuitem"
             >
               Ajouter une carte
             </button>
+
             <button
               className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-              onClick={async () => {
-                const newName = prompt(`Renommer la liste \"${list.name}\"`, list.name)?.trim();
-                if (!newName || newName === list.name) return;
-                try {
-                  const res = await api.put<ApiResponse<List>>(`/lists/${list.id}`, {
-                    name: newName,
-                    boardId: list.boardId,
-                  });
-                  onRenameList?.(res.data);
-                } catch (error) {
-                  console.error("Erreur lors du renommage de la liste :", error);
-                  alert("Impossible de renommer la liste. Réessayez.");
-                } finally {
-                  setMenuOpen(false);
-                }
-              }}
+              onClick={handleRenameList}
               role="menuitem"
             >
               Renommer la liste
             </button>
+
             <div className="h-px bg-gray-200 my-1" />
+
             <button
               className="w-full text-left px-3 py-2 hover:bg-red-50 text-sm text-red-600"
-              onClick={async () => {
-                const confirmDelete = confirm(`Confirmer la suppression de la liste \"${list.name}\" ?`);
-                if (!confirmDelete) return;
-                try {
-                  await api.delete(`/lists/${list.id}`);
-                  onDeleteList?.(list.id);
-                } catch (error) {
-                  console.error("Erreur lors de la suppression de la liste", error);
-                  alert("Impossible de supprimer la liste. Réessayez.");
-                  return;
-                }
-                setMenuOpen(false);
-              }}
+              onClick={handleDeleteList}
               role="menuitem"
             >
               Supprimer la liste
@@ -245,6 +300,7 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
           </div>
         </div>
       </div>
+
       <Droppable droppableId={list.id}>
         {(provided, snapshot) => (
           <div
@@ -255,7 +311,10 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
             }`}
           >
             {cardsToRender.map((card, index) => (
-              <CardItem key={card.id} card={card} index={index}
+              <CardItem
+                key={card.id}
+                card={card}
+                index={index}
                 onUpdateCard={onUpdateCard}
                 onDeleteCard={onDeleteCard}
               />
@@ -264,6 +323,13 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
           </div>
         )}
       </Droppable>
+
+      <button
+        className="mt-2 w-full px-3 py-2 text-black rounded border-dashed border border-blue-500 hover:bg-blue-600 hover:text-white text-sm"
+        onClick={handleCreateCard}
+      >
+        + Ajouter une carte
+      </button>
     </div>
   );
 }
