@@ -161,6 +161,26 @@ export default function Board({
                     },
                   }));
                 }}
+                onUpdateCard={(updated) => {
+                  setState((prev) => ({
+                    ...prev,
+                    cardsById: { ...prev.cardsById, [updated.id]: updated },
+                  }));
+                }}
+                onDeleteCard={(cardId) => {
+                  setState((prev) => {
+                    const card = prev.cardsById[cardId];
+                    if (!card) return prev;
+                    const { [cardId]: _removed, ...restCardsById } = prev.cardsById;
+                    const order = prev.cardOrderByList[card.listId] || [];
+                    const newOrder = order.filter((id) => id !== cardId);
+                    return {
+                      ...prev,
+                      cardsById: restCardsById,
+                      cardOrderByList: { ...prev.cardOrderByList, [card.listId]: newOrder },
+                    };
+                  });
+                }}
               />
             );
           })}

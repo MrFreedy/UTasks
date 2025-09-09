@@ -12,9 +12,11 @@ type ListColumnProps = {
   onDeleteList?: (listId: string) => void;
   onRenameList?: (updated: List) => void;
   onAddCard?: (card: Card) => void;
+  onUpdateCard?: (card: Card) => void;
+  onDeleteCard?: (cardId: string) => void;
 };
 
-export default function ListColumn({ list, cards, onDeleteList, onRenameList, onAddCard }: ListColumnProps) {
+export default function ListColumn({ list, cards, onDeleteList, onRenameList, onAddCard, onUpdateCard, onDeleteCard }: ListColumnProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [sortMode, setSortMode] = useState<"none" | "dueDate" | "priority">("none");
@@ -243,7 +245,10 @@ export default function ListColumn({ list, cards, onDeleteList, onRenameList, on
             }`}
           >
             {cardsToRender.map((card, index) => (
-              <CardItem key={card.id} card={card} index={index} />
+              <CardItem key={card.id} card={card} index={index}
+                onUpdateCard={onUpdateCard}
+                onDeleteCard={onDeleteCard}
+              />
             ))}
             {provided.placeholder}
           </div>
