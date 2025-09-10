@@ -67,6 +67,11 @@ function Login() {
                 {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
+          <div className="flex justify-center mt-4">
+            <a href="/signup" className="text-sm text-gray-600 hover:underline text-center">
+              Pas de compte ? Créez-en un
+            </a>
+          </div>
         </div>
       </div>
     </div>
