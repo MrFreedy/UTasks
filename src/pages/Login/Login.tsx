@@ -16,6 +16,12 @@ function Login() {
     setErrMsg('');
     setLoading(true);
 
+    localStorage.setItem('username', "mrfreedy");
+    localStorage.setItem('userId', "68bb1b4f4f7f28ba2c16cc94");
+    setLoading(false);
+    navigate('/');
+
+    /** Hardcoded user credentials for demo purposes 
     try {
         const res = await api.login(id.trim());
         if (res.success) {
@@ -29,7 +35,7 @@ function Login() {
         setErrMsg('Erreur lors de la connexion. Veuillez réessayer.');
     } finally {
         setLoading(false);
-    }
+    }*/
 };
 
   return (

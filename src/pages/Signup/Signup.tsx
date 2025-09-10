@@ -17,6 +17,12 @@ function Signup() {
     setErrMsg('');
     setLoading(true);
 
+    localStorage.setItem('username', "mrfreedy");
+    localStorage.setItem('userId', "68bb1b4f4f7f28ba2c16cc94");
+    setLoading(false);
+    navigate('/');
+
+    /** Hardcoded user credentials for demo purposes
     try {
         const res = await api.post<ApiResponse<{ id: string; username: string }>>('/users/register', { username: username.trim() });
         if (res.success) {
@@ -30,7 +36,7 @@ function Signup() {
         setErrMsg('Erreur lors de la connexion. Veuillez réessayer.');
     } finally {
         setLoading(false);
-    }
+    }*/
 };
 
   return (
