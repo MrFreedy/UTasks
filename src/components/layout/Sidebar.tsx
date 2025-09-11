@@ -1,5 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { RiMoreFill } from "@remixicon/react";
 import type { BoardLite, ApiResponse } from "./types";
+import type { Board } from "@/components/board/types";
 import api from "@/services/apiService";
 
 type SidebarProps = {
@@ -20,6 +22,7 @@ export default function Sidebar({
   onSelectBoard,
 }: SidebarProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [openMenuForId, setOpenMenuForId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -29,6 +32,23 @@ export default function Sidebar({
       el?.focus();
     }
   }, [open]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpenMenuForId(null);
+    }
+    function onClick() {
+      if (openMenuForId) setOpenMenuForId(null);
+    }
+    if (openMenuForId) {
+      window.addEventListener("keydown", onKey);
+      window.addEventListener("mousedown", onClick);
+    }
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onClick);
+    };
+  }, [openMenuForId]);
 
   const handleNewBoard = () => {
     const name = prompt("Nom du nouveau board ?");
@@ -103,16 +123,122 @@ export default function Sidebar({
               const active = b.id === currentBoardId;
               return (
                 <li key={b.id}>
-                  <button
+                  <div
                     className={[
-                      "w-full text-left px-3 py-2.5 rounded-lg border",
+                      "w-full px-2 py-2.5 rounded-lg border",
                       "bg-slate-50 border-gray-200 hover:bg-slate-100",
                       active ? "bg-indigo-100 border-indigo-300 border-3" : "",
+                      "flex items-center justify-between gap-2",
                     ].join(" ")}
                     onClick={() => onSelectBoard?.(b.id)}
                   >
-                    {b.name}
-                  </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate px-1 text-left">{b.name}</div>
+                    </div>
+
+                    <div
+                      className="relative"
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-gray-100"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuForId === b.id}
+                        title="Actions du board"
+                        onClick={() => setOpenMenuForId((v) => (v === b.id ? null : b.id))}
+                      >
+                        <RiMoreFill className="w-4 h-4" />
+                      </button>
+
+                      <div
+                        className={[
+                          "absolute right-0 mt-1 w-48 z-[200]",
+                          "bg-white border border-gray-200 rounded-lg shadow-sm",
+                          openMenuForId === b.id ? "block" : "hidden",
+                        ].join(" ")}
+                        role="menu"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                          role="menuitem"
+                          onClick={async () => {
+                            try {
+                              const fetched = await api.get<ApiResponse<Board> | Board>(`/boards/${b.id}`);
+                              const current = (fetched as any)?.data ?? (fetched as any);
+                              const newName = prompt("Renommer le board", current?.name ?? b.name)?.trim();
+                              if (!newName || newName === (current?.name ?? b.name)) {
+                                setOpenMenuForId(null);
+                                return;
+                              }
+                              const newDesc = prompt(
+                                "Description du board",
+                                current?.description ?? ""
+                              ) ?? current?.description ?? "";
+
+                              await api.put<ApiResponse<Board>>(`/boards/${b.id}`, {
+                                name: newName,
+                                description: newDesc,
+                                userId: current?.userId ?? localStorage.getItem("userId") ?? "",
+                              });
+
+                              window.location.reload();
+                            } catch (error) {
+                              console.error("Erreur lors du renommage du board", error);
+                              alert("Impossible de renommer le board.");
+                            } finally {
+                              setOpenMenuForId(null);
+                            }
+                          }}
+                        >
+                          Renommer le board
+                        </button>
+
+                        <button
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                          role="menuitem"
+                          onClick={() => {
+                            const url = new URL(window.location.href);
+                            url.searchParams.set("b", b.id);
+                            navigator.clipboard?.writeText(url.toString());
+                            setOpenMenuForId(null);
+                          }}
+                        >
+                          Copier le lien du board
+                        </button>
+
+                        <div className="h-px bg-gray-200 my-1" />
+
+                        <button
+                          className="w-full text-left px-3 py-2 hover:bg-red-50 text-sm text-red-600"
+                          role="menuitem"
+                          onClick={async () => {
+                            const ok = confirm(`Supprimer le board "${b.name}" ?`);
+                            if (!ok) { setOpenMenuForId(null); return; }
+                            try {
+                              await api.delete(`/boards/${b.id}`);
+                              if (b.id === currentBoardId) {
+                                window.location.href = "/";
+                              } else {
+                                window.location.reload();
+                              }
+                            } catch (error) {
+                              console.error("Erreur lors de la suppression du board", error);
+                              alert("Impossible de supprimer le board.");
+                            } finally {
+                              setOpenMenuForId(null);
+                            }
+                          }}
+                        >
+                          Supprimer le board
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </li>
               );
             })}
