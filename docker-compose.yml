@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "5173:5173"
+      - "4172:4172"
     networks:
       - utasks-network
 
