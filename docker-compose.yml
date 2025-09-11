@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  web:
+    container_name: utasks-web
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "5173:5173"
+    networks:
+      - utasks-network
+
+networks:
+  utasks-network:
+    external: true
