@@ -18,7 +18,7 @@ export default function Board({
 
   useEffect(() => {
     setState(normalize(board, lists, cards));
-  }, [board, lists, cards]);
+  }, [board.id]);
 
   useEffect(() => {
     let cancelled = false;
