@@ -27,10 +27,9 @@ type NewCardInput = {
   title: string;
   description: string;
   priority: 1 | 2 | 3;
-  dueDate: string; // AAAA-MM-JJ
+  dueDate: string;
 };
 
-/** Demande à l'utilisateur les infos d'une nouvelle carte (via prompt) et valide les entrées. */
 function promptNewCardInput(listName: string): NewCardInput | null {
   const title = prompt(`Nom de la nouvelle carte dans "${listName}" ?`);
   if (!title) return null;
@@ -75,7 +74,6 @@ function promptNewCardInput(listName: string): NewCardInput | null {
   };
 }
 
-/** Comparateurs de tri de cartes */
 const cardComparators = {
   none: (_a: Card, _b: Card, _ai: number, _bi: number) => 0,
   dueDate: (a: Card, b: Card, ai: number, bi: number) => {
@@ -160,7 +158,6 @@ export default function ListColumn({
     }
   }, [list.id, list.name, onAddCard]);
 
-  /** Action centralisée : renommer la liste */
   const handleRenameList = useCallback(async () => {
     const newName = prompt(`Renommer la liste "${list.name}"`, list.name)?.trim();
     if (!newName || newName === list.name) return;
@@ -178,7 +175,6 @@ export default function ListColumn({
     }
   }, [list.id, list.name, list.boardId, onRenameList]);
 
-  /** Action centralisée : supprimer la liste */
   const handleDeleteList = useCallback(async () => {
     const confirmDelete = confirm(
       `Confirmer la suppression de la liste "${list.name}" ?`

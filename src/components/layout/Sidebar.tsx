@@ -103,7 +103,7 @@ export default function Sidebar({
         tabIndex={-1}
       >
         <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100">
-          <h3 className="m-0 text-base font-bold">Mes Boards</h3>
+          <a className="m-0 text-base font-bold hover:underline" href="/">Mes Boards</a>
           <button
             className="text-2xl leading-none bg-transparent border-0 cursor-pointer hover:opacity-80"
             onClick={onClose}
