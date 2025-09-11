@@ -3,8 +3,9 @@ import Board from "@/components/board/Board";
 import type { Board as BoardType } from "@/components/board/types";
 import Header from "@/components/layout/Header";
 import api from "@/services/apiService";
+import type { ApiResponse } from "@/components/layout/types";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { RiInformationLine } from "@remixicon/react";
+import { RiInformationLine, RiMoreFill } from "@remixicon/react";
 
 const user = {
   id: localStorage.getItem("userId") || "",
@@ -19,6 +20,8 @@ export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const [boards, setBoards] = useState<BoardType[]>([]);
   const [currentBoardId, setCurrentBoardId] = useState<string | undefined>(undefined);
+
+  const [openMenuForId, setOpenMenuForId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBoards = async () => {
@@ -46,6 +49,23 @@ export default function Dashboard() {
     };
     fetchBoards();
   }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpenMenuForId(null);
+    }
+    function onClick() {
+      if (openMenuForId) setOpenMenuForId(null);
+    }
+    if (openMenuForId) {
+      window.addEventListener("keydown", onKey);
+      window.addEventListener("mousedown", onClick);
+    }
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onClick);
+    };
+  }, [openMenuForId]);
 
   const currentBoard = useMemo(
     () => boards.find((b) => b.id === currentBoardId),
@@ -94,13 +114,124 @@ export default function Dashboard() {
                     navigate({ pathname: "/", search: sp.toString() });
                   }}
                 >
-                  <div className="font-semibold mb-1 truncate">{b.name}
-                    <span className="ml-1 align-middle relative group">
-                      <RiInformationLine className="inline-block w-3 h-3 text-gray-500 cursor-pointer mb-1" />
-                      <span className="absolute left-5 top-0 z-10 hidden group-hover:block bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                        Board ID: {b.id}
-                      </span>
-                    </span>
+                  <div className="mb-1 flex items-start justify-between">
+                    {/* Title + info tooltip (left), with truncation that doesn't clip the menu */}
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate flex items-center">
+                        <span className="truncate">{b.name}</span>
+                        <span className="ml-1 align-middle relative group shrink-0">
+                          <RiInformationLine className="inline-block w-3 h-3 text-gray-500 cursor-pointer mb-1" />
+                          <span className="absolute left-5 top-0 z-10 hidden group-hover:block bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                            Board ID: {b.id}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions button + dropdown menu (right, anchored top-right of the tile) */}
+                    <div
+                      className="relative shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-gray-100"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuForId === b.id}
+                        title="Actions du board"
+                        onClick={() => setOpenMenuForId((v) => (v === b.id ? null : b.id))}
+                      >
+                        <RiMoreFill className="w-4 h-4" />
+                      </button>
+
+                      {/* Dropdown aligned to the top-right of the tile (opens downward) */}
+                      <div
+                        className={[
+                          "absolute right-0 mt-1 w-48 z-[200]",
+                          "bg-white border border-gray-200 rounded-lg shadow-sm",
+                          openMenuForId === b.id ? "block" : "hidden",
+                        ].join(" ")}
+                        role="menu"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                          role="menuitem"
+                          onClick={async () => {
+                            try {
+                              const fetched = await api.get<ApiResponse<Board> | Board>(`/boards/${b.id}`);
+                              const current = (fetched as any)?.data ?? (fetched as any);
+                              const newName = prompt("Renommer le board", current?.name ?? b.name)?.trim();
+                              if (!newName || newName === (current?.name ?? b.name)) {
+                                setOpenMenuForId(null);
+                                return;
+                              }
+                              const newDesc = prompt(
+                                "Description du board",
+                                current?.description ?? ""
+                              ) ?? current?.description ?? "";
+
+                              await api.put<ApiResponse<Board>>(`/boards/${b.id}`, {
+                                name: newName,
+                                description: newDesc,
+                                userId: current?.userId ?? localStorage.getItem("userId") ?? "",
+                              });
+
+                              window.location.reload();
+                            } catch (error) {
+                              console.error("Erreur lors du renommage du board", error);
+                              alert("Impossible de renommer le board.");
+                            } finally {
+                              setOpenMenuForId(null);
+                            }
+                          }}
+                        >
+                          Renommer le board
+                        </button>
+
+                        <button
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                          role="menuitem"
+                          onClick={() => {
+                            const url = new URL(window.location.href);
+                            url.searchParams.set("b", b.id);
+                            navigator.clipboard?.writeText(url.toString());
+                            setOpenMenuForId(null);
+                          }}
+                        >
+                          Copier le lien du board
+                        </button>
+
+                        <div className="h-px bg-gray-200 my-1" />
+
+                        <button
+                          className="w-full text-left px-3 py-2 hover:bg-red-50 text-sm text-red-600"
+                          role="menuitem"
+                          onClick={async () => {
+                            const ok = confirm(`Supprimer le board "${b.name}" ?`);
+                            if (!ok) { setOpenMenuForId(null); return; }
+                            try {
+                              await api.delete(`/boards/${b.id}`);
+                              if (b.id === currentBoardId) {
+                                window.location.href = "/";
+                              } else {
+                                window.location.reload();
+                              }
+                            } catch (error) {
+                              console.error("Erreur lors de la suppression du board", error);
+                              alert("Impossible de supprimer le board.");
+                            } finally {
+                              setOpenMenuForId(null);
+                            }
+                          }}
+                        >
+                          Supprimer le board
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div className="text-xs text-gray-500 truncate">{b.description}</div>
                 </button>
