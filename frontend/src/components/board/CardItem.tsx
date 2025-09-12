@@ -81,23 +81,13 @@ export default function CardItem({ card, index, onUpdateCard, onDeleteCard }: Ca
 
                     const currentDateStr = new Date(card.dueDate).toISOString().slice(0,10);
                     const dueDateInput = prompt("Échéance (AAAA-MM-JJ)", currentDateStr) || currentDateStr;
-                    const m = dueDateInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-                    if (!m) { alert("Date invalide."); return; }
-                    const [_, y, mo, d] = m;
-                    const yN = Number(y), moN = Number(mo), dN = Number(d);
-                    const dObj = new Date(Date.UTC(yN, moN - 1, dN, 23, 59, 59, 0));
-                    if (dObj.getUTCFullYear() !== yN || dObj.getUTCMonth() !== moN - 1 || dObj.getUTCDate() !== dN) {
-                      alert("Date invalide.");
-                      return;
-                    }
-                    const dueDateForApi = `${y}-${mo}-${d}`;
-
+                    
                     try {
                       const res = await api.put<ApiResponse<Card>|Card>(`/cards/${card.id}`, {
                         title,
                         description,
                         priority: priorityNum,
-                        dueDate: dueDateForApi,
+                        dueDate: dueDateInput,
                         listId: card.listId,
                         isCompleted: card.isCompleted ?? false,
                       });

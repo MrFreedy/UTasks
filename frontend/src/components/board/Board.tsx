@@ -100,6 +100,9 @@ export default function Board({
     destOrder.splice(destination.index, 0, draggableId);
 
     const movedCard = { ...state.cardsById[draggableId], listId: destListId };
+    if (movedCard.dueDate) {
+      movedCard.dueDate = movedCard.dueDate.split("T")[0];
+    }
 
     const next: UIState = {
       ...state,
@@ -113,6 +116,22 @@ export default function Board({
 
     setState(next);
     onMoveCard?.(movedCard, destListId, destination.index, next);
+    console.log(movedCard.dueDate);
+    (async () => {
+      try {
+        await api.put<ApiResponse<Card> | Card>(`/cards/${draggableId}`, {
+          title: movedCard.title,
+          description: movedCard.description,
+          priority: movedCard.priority,
+          dueDate: movedCard.dueDate,
+          listId: movedCard.listId,
+          isCompleted: movedCard.isCompleted ?? false,
+        });
+        console.log(movedCard.dueDate);
+      } catch (err) {
+        console.error("Erreur lors de la mise à jour de la carte après déplacement:", err);
+      }
+    })();
   }
 
   return (
