@@ -194,7 +194,7 @@ export default function ListColumn({
 
   return (
     <div
-      className="bg-gray-50 border border-gray-300 rounded-lg p-3 min-h-[200px] min-w-[250px] flex-none relative"
+      className="bg-gray-50 border border-gray-300 rounded-lg p-3 min-h-[200px] min-w-full sm:min-w-[250px] flex-auto sm:flex-none relative"
       ref={innerRef}
       {...draggableProps}
     >

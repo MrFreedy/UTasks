@@ -23,6 +23,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [openMenuForId, setOpenMenuForId] = useState<string | null>(null);
+  const [menuUp, setMenuUp] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -148,14 +149,21 @@ export default function Sidebar({
                         aria-haspopup="menu"
                         aria-expanded={openMenuForId === b.id}
                         title="Actions du board"
-                        onClick={() => setOpenMenuForId((v) => (v === b.id ? null : b.id))}
+                        onClick={(e) => {
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const spaceBelow = window.innerHeight - rect.bottom;
+                          const approxMenuHeight = 180;
+                          setMenuUp(spaceBelow < approxMenuHeight);
+                          setOpenMenuForId((v) => (v === b.id ? null : b.id));
+                        }}
                       >
                         <RiMoreFill className="w-4 h-4" />
                       </button>
 
                       <div
                         className={[
-                          "absolute right-0 mt-1 w-48 z-[200]",
+                          "absolute right-0 w-48 max-w-[80vw] max-h-[60vh] overflow-auto z-[200]",
+                          menuUp ? "bottom-full mb-1" : "top-full mt-1",
                           "bg-white border border-gray-200 rounded-lg shadow-sm",
                           openMenuForId === b.id ? "block" : "hidden",
                         ].join(" ")}

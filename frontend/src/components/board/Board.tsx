@@ -15,6 +15,16 @@ export default function Board({
   disableLocalPersistence
 }: BoardProps) {
   const [state, setState] = useState<UIState>(() => normalize(board, lists, cards));
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const apply = () => setIsNarrow(mq.matches);
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
 
   useEffect(() => {
     setState(normalize(board, lists, cards));
@@ -137,12 +147,16 @@ export default function Board({
   return (
     <div className="w-full block px-4 mt-2 overflow-x-visible">
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="board-columns" type="COLUMN" direction="horizontal">
+        <Droppable droppableId="board-columns" type="COLUMN" direction={isNarrow ? "vertical" : "horizontal"}>
           {(colProvided) => (
             <div
               ref={colProvided.innerRef}
               {...colProvided.droppableProps}
-              className="flex flex-row flex-nowrap gap-4 items-start w-full max-w-full overflow-x-auto pb-2 overscroll-contain [scrollbar-gutter:stable_both-edges]"
+              className={[
+                isNarrow
+                  ? "flex flex-col gap-4 items-stretch w-full max-w-full overflow-y-auto pb-2"
+                  : "flex flex-row flex-nowrap gap-4 items-start w-full max-w-full overflow-x-auto pb-2 overscroll-contain [scrollbar-gutter:stable_both-edges]",
+              ].join(" ")}
             >
               {listsToRender.map((list, index) => {
                 const cardIds = state.cardOrderByList[list.id] || [];
@@ -216,7 +230,7 @@ export default function Board({
                 );
               })}
 
-              <div className="min-w-[250px] flex items-center justify-center flex-none">
+              <div className="w-full sm:min-w-[250px] flex items-center justify-center flex-none">
                 <button
                   className="bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-gray-300 rounded-lg p-3 w-full min-h-[200px] flex items-center justify-center text-gray-500 cursor-pointer"
                   onClick={async () => {

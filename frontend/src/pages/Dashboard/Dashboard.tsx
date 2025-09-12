@@ -149,7 +149,7 @@ export default function Dashboard() {
                       {/* Dropdown aligned to the top-right of the tile (opens downward) */}
                       <div
                         className={[
-                          "absolute right-0 mt-1 w-48 z-[200]",
+                          "absolute right-0 mt-1 w-48 max-w-[80vw] max-h-[60vh] overflow-auto z-[200]",
                           "bg-white border border-gray-200 rounded-lg shadow-sm",
                           openMenuForId === b.id ? "block" : "hidden",
                         ].join(" ")}

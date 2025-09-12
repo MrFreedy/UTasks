@@ -147,7 +147,7 @@ export default function CardItem({ card, index, onUpdateCard, onDeleteCard }: Ca
               </button>
               <div
                 className={[
-                  "absolute right-0 mt-1 w-48 z-[15]",
+                  "absolute right-0 mt-1 w-48 max-w-[80vw] max-h-[60vh] overflow-auto z-[15]",
                   "bg-white border border-gray-200 rounded-lg shadow-sm",
                   menuOpen ? "block" : "hidden",
                 ].join(" ")}
