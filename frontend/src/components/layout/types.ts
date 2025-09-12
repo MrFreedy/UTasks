@@ -6,6 +6,7 @@ export type User = {
 export type BoardLite = {
   id: string;
   name: string;
+  description?: string;
 };
 
 export type ApiResponse<T> = {
