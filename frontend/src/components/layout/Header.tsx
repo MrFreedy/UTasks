@@ -66,7 +66,11 @@ export default function Header({
 
           <div className="text-gray-900 font-bold text-base sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis">
             {boards.find((b) => b.id === currentBoardId)?.name ?? "Mes Boards"}
-            <span className="text-gray-500 text-sm font-normal"> / {boards.find((b) => b.id === currentBoardId)?.description ?? "Mes Boards"}</span>
+            <span className="text-gray-500 text-sm font-normal">
+              <span className="hidden sm:inline"> / </span>
+              <br className="sm:hidden" />
+              {boards.find((b) => b.id === currentBoardId)?.description ?? "Mes Boards"}
+            </span>          
           </div>
         </div>
 
