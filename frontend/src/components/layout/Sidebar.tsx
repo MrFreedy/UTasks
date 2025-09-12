@@ -113,7 +113,7 @@ export default function Sidebar({
           </button>
         </div>
 
-        <nav className="p-3 overflow-y-auto">
+        <nav className="p-3">
           {boards.length === 0 && (
             <div className="text-gray-500 text-center text-sm px-3 py-2">Aucun board disponible</div>
           )}
