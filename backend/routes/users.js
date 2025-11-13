@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const router = express.Router();
+const { generateObjectId } = require('../utils');
 
 router.get('/', async (req, res) => {
     try {
@@ -29,7 +30,8 @@ router.post('/', async (req, res) => {
     try {
         const { username, password} = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await pool.query('INSERT INTO users (username, password) VALUES($1, $2)', [username, hashedPassword]);
+        const id = generateObjectId();
+        const newUser = await pool.query('INSERT INTO users (id, username, password) VALUES($1, $2, $3)', [id, username, hashedPassword]);
         res.status(200).send('User created');
     } catch (err) {
         res.status(500).json({error: err.message})
@@ -66,18 +68,35 @@ router.delete('/:id', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const { username, password } = req.body;
+
+        const user = await pool.query(
+            'SELECT * FROM users WHERE username = $1',
+            [username]
+        );
+
         if (user.rowCount === 0) {
-            return res.status(404).send('User not found');
+            return res.status(404).json({ error: 'User not found' });
         }
+
         const validPassword = await bcrypt.compare(password, user.rows[0].password);
         if (!validPassword) {
-            return res.status(400).send('Invalid password');
+            return res.status(400).json({ error: 'Invalid password' });
         }
-        res.status(200).send('User connected');
+
+        const safeUser = {
+            id: user.rows[0].id,
+            username: user.rows[0].username,
+            created_at: user.rows[0].created_at
+        };
+
+        return res.status(200).json({
+            message: 'User connected',
+            user: safeUser
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
     }
 });
 
