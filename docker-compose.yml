@@ -11,6 +11,35 @@ services:
     networks:
       - utasks-network
 
+  api:
+    container_name: utasks-api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - utasks-network
+
+  db:
+    container_name: utasks-db
+    image: postgres:16
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: utasks
+      POSTGRES_DB: utasks
+    networks:
+      - utasks-network
+
 networks:
   utasks-network:
     external: true
+
+volumes:
+  postgres_data:
