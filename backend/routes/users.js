@@ -28,13 +28,23 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const { username, password} = req.body;
+        const { username, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
         const id = generateObjectId();
-        const newUser = await pool.query('INSERT INTO users (id, username, password) VALUES($1, $2, $3)', [id, username, hashedPassword]);
-        res.status(200).send('User created');
+
+        await pool.query(
+            'INSERT INTO users (id, username, password) VALUES ($1, $2, $3)',
+            [id, username, hashedPassword]
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: { id, username },
+            message: "User created successfully"
+        });
+
     } catch (err) {
-        res.status(500).json({error: err.message})
+        return res.status(500).json({ error: err.message });
     }
 });
 
