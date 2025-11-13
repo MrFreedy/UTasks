@@ -9,6 +9,7 @@ import type { ApiResponse } from '@/components/layout/types';
 function Signup() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
 
@@ -17,26 +18,34 @@ function Signup() {
     setErrMsg('');
     setLoading(true);
 
-    localStorage.setItem('username', "mrfreedy");
-    localStorage.setItem('userId', "68bb1b4f4f7f28ba2c16cc94");
-    setLoading(false);
-    navigate('/');
+    
 
-    /** Hardcoded user credentials for demo purposes
     try {
-        const res = await api.post<ApiResponse<{ id: string; username: string }>>('/users/register', { username: username.trim() });
-        if (res.success) {
-            localStorage.setItem('username', username.trim());
-            localStorage.setItem('userId', res.data.id);
-            navigate('/');
-        } else {
-            setErrMsg('ID utilisateur invalide. Veuillez réessayer.');
-        }
+      const res = await api.post<ApiResponse<{ id: string; username: string }>>(
+          '/users',
+          {
+              username: username.trim(),
+              password: password.trim()
+          }
+      );
+
+      if (res?.success && res.data) {
+          localStorage.setItem('username', res.data.username);
+          localStorage.setItem('userId', res.data.id);
+          navigate('/');
+      } else {
+          setErrMsg('Impossible de créer le compte. Veuillez réessayer.');
+      }
+
     } catch (error: any) {
-        setErrMsg('Erreur lors de la connexion. Veuillez réessayer.');
+        if (error.response?.data?.error) {
+            setErrMsg(error.response.data.error);
+        } else {
+            setErrMsg('Erreur serveur. Veuillez réessayer.');
+        }
     } finally {
         setLoading(false);
-    }*/
+    }
 };
 
   return (
@@ -58,6 +67,15 @@ function Signup() {
               className="p-2 border rounded"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Mot de passe"
+              className="p-2 border rounded"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
 
