@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const userRouter = require('./routes/users');
+const boardRouter = require('./routes/boards');
 
 const port = 3000;
 
@@ -15,6 +16,7 @@ app.use(cors({
 app.use(express.json());
 
 app.use('/users', userRouter);
+app.use('/boards', boardRouter);
 
 app.listen(port, () => {
     console.log('Server is running on port', port);
