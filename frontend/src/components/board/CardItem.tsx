@@ -100,7 +100,7 @@ export default function CardItem({ card, index, onUpdateCard, onDeleteCard }: Ca
   };
 
   return (
-    <Draggable draggableId={card.id} index={index}>
+    <Draggable draggableId={String(card.id)} index={index}>
       {(provided, snapshot) => (
         <div
           className={[

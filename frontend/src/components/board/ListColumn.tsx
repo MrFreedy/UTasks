@@ -297,8 +297,8 @@ export default function ListColumn({
         </div>
       </div>
 
-      <Droppable droppableId={list.id}>
-        {(provided, snapshot) => (
+        <Droppable droppableId={String(list.id)}>
+          {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}

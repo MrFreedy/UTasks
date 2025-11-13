@@ -43,7 +43,18 @@ export default function Board({
               .catch(() => undefined)
           )
         );
-        const cardsFromApi: Card[] = cardResponses.flatMap((r) => r?.data ?? []);
+        const cardsFromApi: Card[] = cardResponses.flatMap((r) => {
+          const arr = r?.data ?? [];
+          return arr.map(card => ({
+              id: card.id,
+              title: card.title,
+              description: card.description,
+              dueDate: card.duedate,
+              priority: card.priority,
+              isCompleted: card.iscompleted,
+              listId: card.listid
+          }));
+        });
         if (!cancelled) setState(normalize(board, listsFromApi, cardsFromApi));
       } catch (err) {
         console.error("Erreur lors du chargement des listes du board:", err);
@@ -162,7 +173,7 @@ export default function Board({
                 const cardIds = state.cardOrderByList[list.id] || [];
                 const cards = cardIds.map((id) => state.cardsById[id]).filter(Boolean);
                 return (
-                  <Draggable draggableId={list.id} index={index} key={list.id}>
+                  <Draggable draggableId={String(list.id)} index={index} key={list.id}>
                     {(provided) => (
                       <ListColumn
                         list={list}

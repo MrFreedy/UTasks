@@ -23,6 +23,14 @@ export default function Dashboard() {
 
   const [openMenuForId, setOpenMenuForId] = useState<string | null>(null);
 
+  const selectBoard = (boardId: string) => {
+    setCurrentBoardId(boardId);
+    localStorage.setItem("currentBoardId", boardId);
+    const sp = new URLSearchParams(searchParams);
+    sp.set("b", boardId);
+    navigate({ pathname: "/", search: sp.toString() });
+  };
+
   useEffect(() => {
     const fetchBoards = async () => {
       const userId = localStorage.getItem("userId") || "";
@@ -78,24 +86,14 @@ export default function Dashboard() {
         user={user}
         boards={boards}
         currentBoardId={currentBoardId}
-        onSelectBoard={(id) => {
-          setCurrentBoardId(id);
-          localStorage.setItem("currentBoardId", id);
-          const sp = new URLSearchParams(searchParams);
-          sp.set("b", id);
-          navigate({ pathname: "/", search: sp.toString() });
-        }}
+        onSelectBoard={selectBoard}
         onBoardCreated={(newBoard) => {
           const next = [...boards, newBoard].sort((a, b) =>
             a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
           );
           setBoards(next);
 
-          setCurrentBoardId(newBoard.id);
-          localStorage.setItem("currentBoardId", newBoard.id);
-          const sp = new URLSearchParams(searchParams);
-          sp.set("b", newBoard.id);
-          navigate({ pathname: "/", search: sp.toString() });
+          selectBoard(newBoard.id);
         }}
       />
       <main className="pt-14 px-4">
@@ -103,15 +101,17 @@ export default function Dashboard() {
           <div className="mt-8 mb-8">
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {boards.map((b) => (
-                <button
+                <div
                   key={b.id}
-                  className="text-left p-4 rounded-lg border border-gray-200 bg-white hover:shadow-sm hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  onClick={() => {
-                    setCurrentBoardId(b.id);
-                    localStorage.setItem("currentBoardId", b.id);
-                    const sp = new URLSearchParams(searchParams);
-                    sp.set("b", b.id);
-                    navigate({ pathname: "/", search: sp.toString() });
+                  role="button"
+                  tabIndex={0}
+                  className="text-left p-4 rounded-lg border border-gray-200 bg-white hover:shadow-sm hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  onClick={() => selectBoard(b.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      selectBoard(b.id);
+                    }
                   }}
                 >
                   <div className="mb-1 flex items-start justify-between">
@@ -234,7 +234,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 truncate">{b.description}</div>
-                </button>
+                </div>
               ))}
               {boards.length === 0 && (
                 <div className="text-gray-500 text-sm">Aucun board pour l’instant.</div>
