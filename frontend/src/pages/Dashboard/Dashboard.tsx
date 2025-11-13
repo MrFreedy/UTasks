@@ -6,6 +6,7 @@ import api from "@/services/apiService";
 import type { ApiResponse } from "@/components/layout/types";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { RiInformationLine, RiMoreFill } from "@remixicon/react";
+import Chat from "@/components/chat/Chat";
 
 const user = {
   id: localStorage.getItem("userId") || "",
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const [currentBoardId, setCurrentBoardId] = useState<string | undefined>(undefined);
 
   const [openMenuForId, setOpenMenuForId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const selectBoard = (boardId: string) => {
     setCurrentBoardId(boardId);
@@ -255,6 +257,21 @@ export default function Dashboard() {
       <span className="block text-center text-sm text-gray-500">
         ID du board : {currentBoard?.id || "Aucun board sélectionné"}
       </span>
+
+      {/* --- BOUTON FLOTANT --- */}
+      <button
+        onClick={() => setChatOpen(v => !v)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition flex items-center justify-center"
+      >
+        💬
+      </button>
+
+      {/* --- FENÊTRE DE CHAT --- */}
+      {chatOpen && (
+        <div className="fixed bottom-24 right-6 w-80 h-96 bg-white border rounded-lg shadow-xl flex flex-col overflow-hidden animate-fade-in">
+          <Chat user={user} onClose={() => setChatOpen(false)} />
+        </div>
+      )}
     </>
   );
 }
