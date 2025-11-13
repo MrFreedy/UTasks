@@ -7,7 +7,8 @@ import api from '@/services/apiService';
 
 function Login() {
   const navigate = useNavigate();
-  const [id, setId] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState('');
 
@@ -16,26 +17,45 @@ function Login() {
     setErrMsg('');
     setLoading(true);
 
-    localStorage.setItem('username', "mrfreedy");
-    localStorage.setItem('userId', "68bb1b4f4f7f28ba2c16cc94");
-    setLoading(false);
-    navigate('/');
+    // localStorage.setItem('username', "mrfreedy");
+    // localStorage.setItem('userId', "68bb1b4f4f7f28ba2c16cc94");
+    // setLoading(false);
+    // navigate('/');
 
-    /** Hardcoded user credentials for demo purposes 
     try {
-        const res = await api.login(id.trim());
-        if (res.success) {
-            localStorage.setItem('username', res.data.username);
-            localStorage.setItem('userId', id.trim());
-            navigate('/');
-        } else {
-            setErrMsg('ID utilisateur invalide. Veuillez réessayer.');
-        }
-    } catch (error: any) {
-        setErrMsg('Erreur lors de la connexion. Veuillez réessayer.');
-    } finally {
-        setLoading(false);
-    }*/
+      setLoading(true);
+
+      const res = await api.login(username.trim(), password.trim());
+      
+      if (res.status === 200) {
+        const user = res.data.user;
+
+        localStorage.setItem('username', user.username);
+        localStorage.setItem('userId', user.id);
+
+        navigate('/');
+      }
+
+      } catch (error: any) {
+
+          if (error.response) {
+              switch (error.response.status) {
+                  case 404:
+                      setErrMsg("Utilisateur introuvable.");
+                      break;
+                  case 400:
+                      setErrMsg("Mot de passe incorrect.");
+                      break;
+                  default:
+                      setErrMsg("Erreur serveur. Veuillez réessayer.");
+              }
+          } else {
+              setErrMsg("Erreur réseau. Serveur injoignable.");
+          }
+
+      } finally {
+          setLoading(false);
+    }
 };
 
   return (
@@ -53,10 +73,19 @@ function Login() {
           <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
             <input
               type="text"
-              placeholder="ID utilisateur"
+              placeholder="Nom d'utilisateur"
               className="p-2 border rounded"
-              value={id}
-              onChange={(e) => setId(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Mot de passe"
+              className="p-2 border rounded"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
 
