@@ -60,20 +60,43 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, listId, dueDate, priority, isCompleted } = req.body;
 
-        const updateCard = await pool.query(
-            'UPDATE cards SET title = $1, description = $2, listid = $3, duedate = $4, priority = $5, iscompleted = $6 WHERE id = $7 RETURNING *',
-            [title, description, listId, dueDate, priority, isCompleted, id]
-        );
-
-        if (updateCard.rowCount === 0) {
+        // Charger la carte pour éviter de perdre des données
+        const existing = await pool.query('SELECT * FROM cards WHERE id = $1', [id]);
+        if (existing.rowCount === 0) {
             return res.status(404).json({ success: false, error: 'Card not found' });
         }
 
+        const old = existing.rows[0];
+
+        // Correction dueDate
+        let dueDate = req.body.dueDate;
+
+        // Si dueDate est vide / undefined → garder l'ancienne valeur
+        if (!dueDate || dueDate.trim() === "") {
+            dueDate = old.duedate;
+        }
+
+        const {
+            title = old.title,
+            description = old.description,
+            listId = old.listid,
+            priority = old.priority,
+            isCompleted = old.iscompleted
+        } = req.body;
+
+        const updated = await pool.query(
+            `UPDATE cards
+             SET title = $1, description = $2, listid = $3, duedate = $4,
+                 priority = $5, iscompleted = $6
+             WHERE id = $7
+             RETURNING *`,
+            [title, description, listId, dueDate, priority, isCompleted, id]
+        );
+
         return res.status(200).json({
             success: true,
-            data: updateCard.rows[0],
+            data: updated.rows[0],
             message: "Card updated successfully"
         });
 

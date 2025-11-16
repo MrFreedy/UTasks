@@ -60,16 +60,31 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, boardId } = req.body;
+
+        // On récupère l'ancienne liste
+        const existing = await pool.query('SELECT * FROM lists WHERE id = $1', [id]);
+        if (existing.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'List not found' });
+        }
+
+        const old = existing.rows[0];
+
+        // On récupère les données envoyées ou on garde les anciennes si manquantes
+        const name = req.body.name ?? old.name;
+        const boardId = req.body.boardId ?? old.boardid;
+
+        // Sécurité : boardId doit TOUJOURS exister
+        if (!boardId) {
+            return res.status(400).json({
+                success: false,
+                error: "boardId is required"
+            });
+        }
 
         const updateList = await pool.query(
             'UPDATE lists SET name = $1, boardid = $2 WHERE id = $3 RETURNING *',
             [name, boardId, id]
         );
-
-        if (updateList.rowCount === 0) {
-            return res.status(404).json({ success: false, error: 'List not found' });
-        }
 
         return res.status(200).json({
             success: true,

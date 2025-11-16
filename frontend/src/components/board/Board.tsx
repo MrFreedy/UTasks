@@ -137,7 +137,6 @@ export default function Board({
 
     setState(next);
     onMoveCard?.(movedCard, destListId, destination.index, next);
-    console.log(movedCard.dueDate);
     (async () => {
       try {
         await api.put<ApiResponse<Card> | Card>(`/cards/${draggableId}`, {
@@ -148,7 +147,6 @@ export default function Board({
           listId: movedCard.listId,
           isCompleted: movedCard.isCompleted ?? false,
         });
-        console.log(movedCard.dueDate);
       } catch (err) {
         console.error("Erreur lors de la mise à jour de la carte après déplacement:", err);
       }

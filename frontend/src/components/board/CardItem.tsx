@@ -12,6 +12,18 @@ type CardItemProps = {
   onDeleteCard?: (cardId: string) => void;
 };
 
+function normalizeCard(raw: any): Card {
+  return {
+    id: raw.id,
+    title: raw.title,
+    description: raw.description,
+    priority: raw.priority,
+    dueDate: raw.duedate ?? raw.dueDate,
+    listId: raw.listid ?? raw.listId,
+    isCompleted: raw.iscompleted ?? raw.isCompleted ?? false,
+  };
+}
+
 const isDateOnly = (v?: unknown): v is string =>
   typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v as string);
 
@@ -90,7 +102,8 @@ export default function CardItem({ card, index, onUpdateCard, onDeleteCard }: Ca
         isCompleted: next,
       };
       const res = await api.put<ApiResponse<Card> | Card>(`/cards/${card.id}`, payload);
-      const updated: Card = (res as any)?.data ?? (res as any);
+      const raw = (res as any)?.data ?? (res as any);
+      const updated = normalizeCard(raw);
       if (typeof (updated as any).isCompleted !== "boolean") (updated as any).isCompleted = next;
       onUpdateCard?.(updated);
     } catch {
@@ -188,7 +201,8 @@ export default function CardItem({ card, index, onUpdateCard, onDeleteCard }: Ca
                         listId: card.listId,
                         isCompleted: card.isCompleted ?? false,
                       });
-                      const updated: Card = (res as any)?.data ?? (res as any);
+                      const raw = (res as any)?.data ?? (res as any);
+                      const updated = normalizeCard(raw);
                       if (typeof (updated as any).isCompleted !== "boolean") (updated as any).isCompleted = false;
                       onUpdateCard?.(updated);
                     } catch {
