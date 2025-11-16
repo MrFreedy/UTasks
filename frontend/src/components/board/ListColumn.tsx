@@ -321,7 +321,7 @@ export default function ListColumn({
       </Droppable>
 
       <button
-        className="mt-2 w-full px-3 py-2 text-black rounded border-dashed border border-blue-500 hover:bg-blue-600 hover:text-white text-sm"
+        className="mt-2 w-full px-3 py-2 text-black rounded border-dashed border border-blue-500 hover:bg-blue-600 hover:text-white text-sm cursor-pointer"
         onClick={handleCreateCard}
       >
         + Ajouter une carte
