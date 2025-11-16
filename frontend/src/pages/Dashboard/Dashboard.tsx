@@ -5,7 +5,7 @@ import Header from "@/components/layout/Header";
 import api from "@/services/apiService";
 import type { ApiResponse } from "@/components/layout/types";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { RiInformationLine, RiMoreFill } from "@remixicon/react";
+import { RiInformationLine, RiMoreFill, RiChat3Line } from "@remixicon/react";
 import Chat from "@/components/chat/Chat";
 
 const user = {
@@ -44,7 +44,6 @@ export default function Dashboard() {
         );
         setBoards(sorted);
 
-        // If URL has ?b=, select that board; otherwise show tiles (no auto-select)
         const fromUrl = searchParams.get("b") || undefined;
         if (fromUrl) {
           setCurrentBoardId(fromUrl);
@@ -130,7 +129,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Actions button + dropdown menu (right, anchored top-right of the tile) */}
                     <div
                       className="relative shrink-0"
                       onClick={(e) => e.stopPropagation()}
@@ -148,7 +146,6 @@ export default function Dashboard() {
                         <RiMoreFill className="w-4 h-4" />
                       </button>
 
-                      {/* Dropdown aligned to the top-right of the tile (opens downward) */}
                       <div
                         className={[
                           "absolute right-0 mt-1 w-48 max-w-[80vw] max-h-[60vh] overflow-auto z-[200]",
@@ -263,7 +260,7 @@ export default function Dashboard() {
         onClick={() => setChatOpen(v => !v)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition flex items-center justify-center"
       >
-        💬
+        <RiChat3Line size={28} />
       </button>
 
       {/* --- FENÊTRE DE CHAT --- */}
