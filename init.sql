@@ -191,15 +191,19 @@ ALTER TABLE ONLY public.users
 --
 
 ALTER TABLE ONLY public.boards
-    ADD CONSTRAINT boards_userid_fk FOREIGN KEY (userid) REFERENCES public.users(id);
-
+    ADD CONSTRAINT boards_userid_fk FOREIGN KEY (userid)
+    REFERENCES public.users(id)
+    ON DELETE CASCADE;
 
 --
 -- Name: cards cards_listid_fk; Type: FK CONSTRAINT; Schema: public; Owner: admin
 --
 
 ALTER TABLE ONLY public.cards
-    ADD CONSTRAINT cards_listid_fk FOREIGN KEY (listid) REFERENCES public.lists(id);
+    ADD CONSTRAINT cards_listid_fk FOREIGN KEY (listid)
+    REFERENCES public.lists(id)
+    ON DELETE CASCADE;
+
 
 
 --
@@ -207,7 +211,9 @@ ALTER TABLE ONLY public.cards
 --
 
 ALTER TABLE ONLY public.lists
-    ADD CONSTRAINT lists_boardid_fk FOREIGN KEY (boardid) REFERENCES public.boards(id);
+    ADD CONSTRAINT lists_boardid_fk FOREIGN KEY (boardid)
+    REFERENCES public.boards(id)
+    ON DELETE CASCADE;
 
 
 --
@@ -215,7 +221,9 @@ ALTER TABLE ONLY public.lists
 --
 
 ALTER TABLE ONLY public.messages
-    ADD CONSTRAINT messages_userid_fk FOREIGN KEY (userid) REFERENCES public.users(id);
+    ADD CONSTRAINT messages_userid_fk FOREIGN KEY (userid)
+    REFERENCES public.users(id)
+    ON DELETE CASCADE;
 
 
 --
